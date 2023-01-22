@@ -5,13 +5,14 @@ uint8_t lfoCastValue;
 
 LfoContainer::LfoContainer lfoContainer;
 
-const uint8_t kReadUpdateTime = 25;
 const float kReadScaling = 1.0f / (1 << 10);
 
 struct Times {
     unsigned long lastLfoUpdate;
     unsigned long lastRead;
     unsigned long now;
+
+    const uint8_t kReadUpdateTime = 25;
 };
 Times times;
 
@@ -57,14 +58,6 @@ void loop() {
     lfoContainer.Process((times.now - times.lastLfoUpdate) * 1e-3);
     times.lastLfoUpdate = times.now;
 
-    if (times.now - times.lastRead >= kReadUpdateTime) {
-        inputValues.rateEncoder = analogRead(PIN_A0) * kReadScaling;
-        inputValues.rateCV = analogRead(PIN_A1) * kReadScaling;
-        inputValues.attenuverter = analogRead(PIN_A2) * kReadScaling * 2 - 1;
-        lfoContainer.SetFrequencyScaler(inputValues.rateEncoder + inputValues.rateCV * inputValues.attenuverter);
-        times.lastRead = times.now;
-    }
-
     lfoCastValue = static_cast<uint8_t>(lfoContainer.Get(0) * UINT8_MAX);
     analogWrite(3, lfoCastValue);
     lfoCastValue = static_cast<uint8_t>(lfoContainer.Get(1) * UINT8_MAX);
@@ -77,4 +70,12 @@ void loop() {
     analogWrite(10, lfoCastValue);
     lfoCastValue = static_cast<uint8_t>(lfoContainer.Get(5) * UINT8_MAX);
     analogWrite(11, lfoCastValue);
+
+    if (times.now - times.lastRead >= times.kReadUpdateTime) {
+        inputValues.rateEncoder = analogRead(PIN_A0) * kReadScaling;
+        inputValues.rateCV = analogRead(PIN_A1) * kReadScaling;
+        inputValues.attenuverter = analogRead(PIN_A2) * kReadScaling * 2 - 1;
+        lfoContainer.SetFrequencyScaler(inputValues.rateEncoder + inputValues.rateCV * inputValues.attenuverter);
+        times.lastRead = times.now;
+    }
 }
